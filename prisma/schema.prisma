@@ -1,0 +1,262 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ConnectionProvider {
+  GOOGLE
+  MICROSOFT
+  IMAP_SMTP
+}
+
+enum ConnectionStatus {
+  CONNECTED
+  EXPIRED
+  ERROR
+  DISCONNECTED
+}
+
+enum ThreadCategory {
+  PERSONAL
+  WORK
+  NEWSLETTER
+  ANNOUNCEMENT
+  PROMOTION
+  NOTIFICATION
+  SYSTEM
+  SPAM_RISK
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  image        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  workspaces   Workspace[]
+  accounts     Account[]
+  auditLogs    AuditLog[]
+}
+
+model Workspace {
+  id               String            @id @default(cuid())
+  name             String
+  ownerId          String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  owner            User              @relation(fields: [ownerId], references: [id])
+  emailConnections EmailConnection[]
+  contacts         Contact[]
+  threads          Thread[]
+  jobs             Job[]
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refreshToken      String?
+  accessToken       String?
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String?
+  sessionState      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model EmailConnection {
+  id                  String             @id @default(cuid())
+  workspaceId         String
+  provider            ConnectionProvider
+  emailAddress        String
+  displayName         String?
+  status              ConnectionStatus   @default(CONNECTED)
+  encryptedSecretJson String
+  lastSyncedAt        DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  syncCursor SyncCursor?
+  threads    Thread[]
+
+  @@unique([workspaceId, emailAddress])
+  @@index([workspaceId, provider])
+}
+
+model Contact {
+  id          String   @id @default(cuid())
+  workspaceId String
+  email       String
+  name        String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  threads   Thread[]
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId])
+}
+
+model Thread {
+  id                 String         @id @default(cuid())
+  workspaceId        String
+  emailConnectionId  String
+  contactId          String
+  subject            String
+  category           ThreadCategory @default(PERSONAL)
+  priorityScore      Float          @default(0)
+  unreadCount        Int            @default(0)
+  isMuted            Boolean        @default(false)
+  isArchived         Boolean        @default(false)
+  lastMessageAt      DateTime       @default(now())
+  lastSummaryPreview String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  emailConnection EmailConnection @relation(fields: [emailConnectionId], references: [id], onDelete: Cascade)
+  contact         Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages        Message[]
+
+  @@index([workspaceId, lastMessageAt])
+  @@index([workspaceId, category])
+}
+
+model Message {
+  id                 String           @id @default(cuid())
+  threadId           String
+  messageIdHeader    String           @unique
+  inReplyToHeader    String?
+  referencesHeader   String?
+  fromAddress        String
+  toAddresses        String[]
+  ccAddresses        String[]
+  bccAddresses       String[]
+  subject            String
+  bodyText           String
+  bodyHtml           String?
+  direction          MessageDirection
+  deliveryStatus     DeliveryStatus   @default(PENDING)
+  isRead             Boolean          @default(false)
+  sentAt             DateTime
+  receivedAt         DateTime
+  createdAt          DateTime         @default(now())
+
+  thread         Thread                  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  attachments    Attachment[]
+  summary        MessageSummary?
+  classification MessageClassification?
+
+  @@index([threadId, sentAt])
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  messageId   String
+  fileName    String
+  mimeType    String
+  fileSize    Int
+  storageKey  String
+  createdAt   DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model MessageSummary {
+  id             String   @id @default(cuid())
+  messageId       String   @unique
+  summary         String
+  actionItemsJson Json?
+  entitiesJson    Json?
+  createdAt       DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model MessageClassification {
+  id            String         @id @default(cuid())
+  messageId     String         @unique
+  category      ThreadCategory
+  confidence    Float
+  priorityScore Float
+  reasoning     String?
+  createdAt     DateTime       @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model SyncCursor {
+  id                String   @id @default(cuid())
+  emailConnectionId String   @unique
+  cursor            String
+  checkpointAt      DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  emailConnection EmailConnection @relation(fields: [emailConnectionId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  workspaceId String
+  type        String
+  status      JobStatus @default(PENDING)
+  payloadJson Json
+  error       String?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId       String
+  workspaceId  String?
+  action       String
+  resourceType String
+  resourceId   String
+  metadataJson Json?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+}
