@@ -2,7 +2,7 @@
 
 ## Infra
 
-- [ ] PostgreSQL with PITR backups
+- [ ] SQLite file backup and restore strategy (or migrate to managed PostgreSQL before scale)
 - [ ] Redis HA (or managed)
 - [ ] Worker deployment separated from web
 - [ ] Object storage for attachments

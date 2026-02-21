@@ -3,62 +3,19 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-}
-
-enum ConnectionProvider {
-  GOOGLE
-  MICROSOFT
-  IMAP_SMTP
-}
-
-enum ConnectionStatus {
-  CONNECTED
-  EXPIRED
-  ERROR
-  DISCONNECTED
-}
-
-enum ThreadCategory {
-  PERSONAL
-  WORK
-  NEWSLETTER
-  ANNOUNCEMENT
-  PROMOTION
-  NOTIFICATION
-  SYSTEM
-  SPAM_RISK
-}
-
-enum MessageDirection {
-  INBOUND
-  OUTBOUND
-}
-
-enum DeliveryStatus {
-  PENDING
-  SENT
-  DELIVERED
-  FAILED
-}
-
-enum JobStatus {
-  PENDING
-  RUNNING
-  SUCCEEDED
-  FAILED
+  provider = "sqlite"
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  name         String?
-  image        String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  workspaces   Workspace[]
-  accounts     Account[]
-  auditLogs    AuditLog[]
+  id        String      @id @default(cuid())
+  email     String      @unique
+  name      String?
+  image     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  workspaces Workspace[]
+  accounts  Account[]
+  auditLogs AuditLog[]
 }
 
 model Workspace {
@@ -75,7 +32,7 @@ model Workspace {
 }
 
 model Account {
-  id                String   @id @default(cuid())
+  id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
@@ -95,16 +52,16 @@ model Account {
 }
 
 model EmailConnection {
-  id                  String             @id @default(cuid())
+  id                  String   @id @default(cuid())
   workspaceId         String
-  provider            ConnectionProvider
+  provider            String   @default("IMAP_SMTP")
   emailAddress        String
   displayName         String?
-  status              ConnectionStatus   @default(CONNECTED)
+  status              String   @default("CONNECTED")
   encryptedSecretJson String
   lastSyncedAt        DateTime?
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   syncCursor SyncCursor?
@@ -131,20 +88,20 @@ model Contact {
 }
 
 model Thread {
-  id                 String         @id @default(cuid())
+  id                 String   @id @default(cuid())
   workspaceId        String
   emailConnectionId  String
   contactId          String
   subject            String
-  category           ThreadCategory @default(PERSONAL)
-  priorityScore      Float          @default(0)
-  unreadCount        Int            @default(0)
-  isMuted            Boolean        @default(false)
-  isArchived         Boolean        @default(false)
-  lastMessageAt      DateTime       @default(now())
+  category           String   @default("PERSONAL")
+  priorityScore      Float    @default(0)
+  unreadCount        Int      @default(0)
+  isMuted            Boolean  @default(false)
+  isArchived         Boolean  @default(false)
+  lastMessageAt      DateTime @default(now())
   lastSummaryPreview String?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   emailConnection EmailConnection @relation(fields: [emailConnectionId], references: [id], onDelete: Cascade)
@@ -156,24 +113,24 @@ model Thread {
 }
 
 model Message {
-  id                 String           @id @default(cuid())
-  threadId           String
-  messageIdHeader    String           @unique
-  inReplyToHeader    String?
-  referencesHeader   String?
-  fromAddress        String
-  toAddresses        String[]
-  ccAddresses        String[]
-  bccAddresses       String[]
-  subject            String
-  bodyText           String
-  bodyHtml           String?
-  direction          MessageDirection
-  deliveryStatus     DeliveryStatus   @default(PENDING)
-  isRead             Boolean          @default(false)
-  sentAt             DateTime
-  receivedAt         DateTime
-  createdAt          DateTime         @default(now())
+  id               String   @id @default(cuid())
+  threadId         String
+  messageIdHeader  String   @unique
+  inReplyToHeader  String?
+  referencesHeader String?
+  fromAddress      String
+  toAddressesJson  String   @default("[]")
+  ccAddressesJson  String   @default("[]")
+  bccAddressesJson String   @default("[]")
+  subject          String
+  bodyText         String
+  bodyHtml         String?
+  direction        String
+  deliveryStatus   String   @default("PENDING")
+  isRead           Boolean  @default(false)
+  sentAt           DateTime
+  receivedAt       DateTime
+  createdAt        DateTime @default(now())
 
   thread         Thread                  @relation(fields: [threadId], references: [id], onDelete: Cascade)
   attachments    Attachment[]
@@ -184,13 +141,13 @@ model Message {
 }
 
 model Attachment {
-  id          String   @id @default(cuid())
-  messageId   String
-  fileName    String
-  mimeType    String
-  fileSize    Int
-  storageKey  String
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  messageId  String
+  fileName   String
+  mimeType   String
+  fileSize   Int
+  storageKey String
+  createdAt  DateTime @default(now())
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
@@ -198,24 +155,24 @@ model Attachment {
 }
 
 model MessageSummary {
-  id             String   @id @default(cuid())
+  id              String   @id @default(cuid())
   messageId       String   @unique
   summary         String
-  actionItemsJson Json?
-  entitiesJson    Json?
+  actionItemsJson String?
+  entitiesJson    String?
   createdAt       DateTime @default(now())
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
 
 model MessageClassification {
-  id            String         @id @default(cuid())
-  messageId     String         @unique
-  category      ThreadCategory
+  id            String   @id @default(cuid())
+  messageId     String   @unique
+  category      String
   confidence    Float
   priorityScore Float
   reasoning     String?
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime @default(now())
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
@@ -231,15 +188,15 @@ model SyncCursor {
 }
 
 model Job {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   workspaceId String
   type        String
-  status      JobStatus @default(PENDING)
-  payloadJson Json
+  status      String   @default("PENDING")
+  payloadJson String
   error       String?
   startedAt   DateTime?
   finishedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -247,13 +204,13 @@ model Job {
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
+  id           String   @id @default(cuid())
   userId       String
   workspaceId  String?
   action       String
   resourceType String
   resourceId   String
-  metadataJson Json?
+  metadataJson String?
   createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

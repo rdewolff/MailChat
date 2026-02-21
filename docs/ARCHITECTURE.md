@@ -3,7 +3,7 @@
 ## Components
 
 - Web app: Next.js App Router frontend + API routes
-- Persistence: PostgreSQL via Prisma
+- Persistence: SQLite via Prisma
 - Queue: Redis + BullMQ for sync and AI processing
 - Providers: Gmail API, Microsoft Graph, IMAP + SMTP
 - AI layer: OpenAI-based summarization/classification with deterministic fallback

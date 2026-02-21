@@ -7,7 +7,7 @@ MailChat is a chat-first email client built with Next.js and Tailwind CSS. It tu
 - Next.js 16 (App Router, TypeScript)
 - Tailwind CSS 4
 - TanStack Query
-- Prisma + PostgreSQL schema
+- Prisma + SQLite schema
 - BullMQ + Redis workers
 - NextAuth (Google + Microsoft)
 - OpenAI (summary/classification)
@@ -40,6 +40,7 @@ MailChat is a chat-first email client built with Next.js and Tailwind CSS. It tu
 npm install
 cp .env.example .env.local
 npm run prisma:generate
+npm run prisma:push
 npm run dev
 ```
 
@@ -56,6 +57,7 @@ npm run dev
 npm run lint
 npm run build
 npm run prisma:generate
+npm run prisma:push
 npm run worker:ingest
 ```
 
