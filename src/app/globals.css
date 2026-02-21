@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --surface-0: #f4f6f9;
+  --surface-1: #f9fbff;
+  --surface-2: #eef3fa;
+  --surface-3: #e4ecf6;
+  --text-primary: #122033;
+  --text-secondary: #32445d;
+  --text-muted: #6b7f99;
+  --border-subtle: #d4dfed;
+
+  --brand-50: #e8f1ff;
+  --brand-100: #d3e5ff;
+  --brand-300: #8cb6ff;
+  --brand-400: #639cf6;
+  --brand-500: #2f76e5;
+  --brand-600: #1f63d3;
+  --brand-700: #174fae;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-space-grotesk);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border-subtle);
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 10% 0%, #e3efff 0%, rgba(227, 239, 255, 0) 42%),
+    radial-gradient(circle at 90% 100%, #deebff 0%, rgba(222, 235, 255, 0) 36%),
+    var(--surface-0);
+  font-family: var(--font-manrope), sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+.mail-surface {
+  backdrop-filter: blur(8px);
+}
+
+.mail-panel {
+  background: color-mix(in oklab, white 88%, #e8f0fb 12%);
+}
+
+.mail-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(190, 208, 232, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(190, 208, 232, 0.22) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+@media (max-width: 900px) {
+  .mail-surface {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
 }
